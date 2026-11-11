@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import steps %}
+{% block title %}Upload the Geneious file{% endblock %}
+{% block content %}
+{{ steps(1) }}
+<h1>Upload the Geneious file of one gene</h1>
+<div class="two-col">
+  <form class="panel" method="post" enctype="multipart/form-data">
+    <div class="field" style="margin-top:0">
+      <label for="files">Geneious file(s) <span class="req">required</span></label>
+      <input type="file" id="files" name="files" accept=".geneious" multiple aria-describedby="files-help">
+      <p class="help" id="files-help">One job builds one gene. If the gene has splice variants, select all of
+        their files at once (Ctrl-click on Windows, Cmd-click on a Mac), or keep all variants in one Geneious
+        file. You can also add variants on the next page.</p>
+    </div>
+    <p class="actions"><button class="btn" type="submit">Upload and continue</button></p>
+  </form>
+
+  <aside class="panel note">
+    <h2>What the file must contain</h2>
+    <ul>
+      <li>One nucleotide sequence per transcript: the genomic sequence (exons with introns) from the first to the
+        last base of the transcript.</li>
+      <li>Annotations of type <b>exon</b>, one per exon, including the UTR parts. Their names (Ex1, Ex2, ...) and
+        their order do not matter.</li>
+      <li>For a protein-coding transcript, one annotation of type <b>CDS</b> from the A of the start codon to
+        the last base of the stop codon. It may span the introns; a joined CDS also works.</li>
+      <li>For a <b>non-coding</b> transcript (a lncRNA, for example) simply leave the CDS out: annotate the
+        exons only. The next page then asks what kind of transcript it is.</li>
+      <li>Nothing else is needed. Other annotation types (for example "extracted region") are ignored and
+        listed on the next page.</li>
+    </ul>
+    <p class="help">The gene should read left to right. If you keep a minus-strand gene in chromosome
+      orientation instead, make the annotation arrows point right to left; the tool then turns the sequence
+      around by itself.</p>
+  </aside>
+</div>
+{% endblock %}

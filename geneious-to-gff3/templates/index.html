@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "_macros.html" import track_legend %}
+{% block content %}
+<section class="hero">
+  <div>
+    <h1>Turn annotated Geneious sequences into GFF3 gene models</h1>
+    <p class="lead">Upload a sequence annotated with <b>exon</b> and, for a coding transcript, <b>CDS</b>; say
+      where it sits on the chromosome; download a checked GFF3 file with Unix line endings. Exons without a CDS
+      become a non-coding transcript such as a lncRNA. Splice variants join the same gene, and finished genes
+      can be merged into one file for the curator.</p>
+    <p class="actions">
+      <a class="btn" href="{{ url_for('build_start') }}">Build a gene model</a>
+      <a class="btn btn-quiet" href="{{ url_for('merge') }}">Merge or check GFF3 files</a>
+    </p>
+  </div>
+  <div class="hero-art">
+    {{ gene_glyph([("mRNA .1", [(1, 140), (260, 320), (430, 520), (640, 700), (810, 1000)],
+                               [(95, 140), (260, 320), (430, 520), (640, 700), (810, 880)]),
+                   ("mRNA .2", [(40, 140), (260, 320), (640, 700), (810, 1040)],
+                               [(95, 140), (260, 320), (640, 700), (810, 880)])], 1, 1040, ruler=False, width=440) }}
+    {{ track_legend() }}
+  </div>
+</section>
+
+<h2>Jobs</h2>
+{% if jobs %}
+<div class="table-scroll">
+<table class="jobs">
+  <thead><tr><th>Gene or file</th><th>Status</th><th>Last change</th><th>Open</th><th></th></tr></thead>
+  <tbody>
+  {% for j in jobs %}
+    <tr>
+      {% if j.kind == 'build' %}
+        <td><b>{{ j.gene.gene_id or 'Unnamed gene' }}</b>
+            <span class="help">{{ j.files|map(attribute='original')|join(', ') }}</span></td>
+        <td><span class="status status-{{ j.status }}">{{ 'GFF3 ready' if j.status == 'built' else 'Details needed' }}</span></td>
+        <td>{{ j.updated }}</td>
+        <td>
+          {% if j.status == 'built' %}
+            <a href="{{ url_for('build_result', job_id=j.id) }}">Results</a> or
+            <a href="{{ url_for('download', job_id=j.id, kind='gff3') }}">download GFF3</a>
+          {% else %}
+            <a href="{{ url_for('build_details', job_id=j.id) }}">Continue</a>
+          {% endif %}
+        </td>
+      {% else %}
+        <td><b>Merged file</b>
+            <span class="help">{{ j.inputs|length }} input file(s)</span></td>
+        <td><span class="status status-{{ j.status }}">{{ 'Merged' if j.status == 'merged' else 'Blocked by errors' }}</span></td>
+        <td>{{ j.updated }}</td>
+        <td><a href="{{ url_for('merge_result', job_id=j.id) }}">Report</a>
+            {% if j.status == 'merged' %} or <a href="{{ url_for('download', job_id=j.id, kind='gff3') }}">download</a>{% endif %}</td>
+      {% endif %}
+      <td>
+        <form class="inline-form" method="post" action="{{ url_for('delete_job', job_id=j.id) }}"
+              onsubmit="return confirm('Delete this job and its files?');">
+          <button class="btn btn-danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="empty">No jobs yet. Start with <a href="{{ url_for('build_start') }}">Build a gene model</a>.</p>
+{% endif %}
+{% endblock %}

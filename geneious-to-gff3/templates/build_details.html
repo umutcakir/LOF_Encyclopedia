@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% from "_macros.html" import text_field, steps, messages as msg_list, track_legend %}
+{% block title %}Describe the gene{% endblock %}
+{% block content %}
+{{ steps(2) }}
+<h1>Describe the gene and place it on the chromosome</h1>
+<p class="lead">Fields marked <span class="req">required</span> need your input; the others are optional or
+  already filled in. The text under each field says exactly what to enter.</p>
+
+{% if general or errors %}
+<div class="alert alert-err" role="alert">
+  <p><b>The GFF3 has not been built yet.</b>
+    {% if errors %}{{ errors|length }} field{{ 's' if errors|length > 1 }} marked in red below
+    need{{ '' if errors|length > 1 else 's' }} attention.{% endif %}</p>
+  {% if general %}<ul>{% for g in general %}<li>{{ g }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% endif %}
+{{ msg_list(messages) }}
+
+<form method="post" action="{{ url_for('build_details', job_id=job.id) }}" enctype="multipart/form-data" novalidate>
+  {# pressing Enter in a text box builds the GFF3 rather than adding files #}
+  <button type="submit" name="action" value="build" class="visually-hidden" tabindex="-1" aria-hidden="true">Build GFF3</button>
+
+  <fieldset class="panel">
+    <legend>The gene</legend>
+    <p class="help">These values apply to every transcript (splice variant) of this gene.</p>
+    <div class="grid2">
+      <div>
+        {% call text_field('seqid', 'Chromosome name', job.gene.seqid, errors, required=True, placeholder='e.g. MtrunA17Chr4') %}
+          Exactly as written in the genome FASTA and the genome browser, for example <code>MtrunA17Chr4</code>.
+          Upper and lower case matter.
+        {% endcall %}
+      </div>
+      <div class="field{{ ' field-err' if errors.strand }}">
+        <span class="label" id="strand-label">Strand of the gene on the chromosome <span class="req">required</span></span>
+        <div class="radio-row" role="radiogroup" aria-labelledby="strand-label">
+          <label><input type="radio" name="strand" value="+" {{ 'checked' if job.gene.strand == '+' }}>
+            <span><b>+</b>&ensp;plus: transcribed left to right in the genome browser</span></label>
+          <label><input type="radio" name="strand" value="-" {{ 'checked' if job.gene.strand == '-' }}>
+            <span><b>&minus;</b>&ensp;minus: transcribed right to left in the genome browser</span></label>
+        </div>
+        {% if errors.strand %}<p class="err">{{ errors.strand }}</p>{% endif %}
+        <p class="help">Only the chromosome strand is needed here. How your Geneious sequence is oriented is
+          read from the annotation arrows.</p>
+      </div>
+      <div>
+        {% call text_field('gene_id', 'Gene ID', job.gene.gene_id, errors, required=True, placeholder='e.g. MtSYT1') %}
+          A name that is unique in the whole submission, for example <code>MtSYT1</code>. Letters, digits, dot,
+          underscore, hyphen or colon; no spaces. If the curator assigns official IDs, use theirs.
+        {% endcall %}
+      </div>
+      <div>
+        {% call text_field('gene_name', 'Gene name (symbol)', job.gene.gene_name, errors) %}
+          The name the browser displays. Leave empty to use the gene ID.
+        {% endcall %}
+      </div>
+      <div>
+        {% call text_field('alias', 'Alias', job.gene.alias, errors, placeholder='e.g. Medtr4g073400') %}
+          Other names or earlier IDs, separated by commas, for example the v4 locus <code>Medtr4g073400</code>.
+        {% endcall %}
+      </div>
+      <div>
+        {% call text_field('source', 'Source (column 2 of the GFF3)', job.gene.source or 'manual_curation', errors, tag='filled in') %}
+          Who or what made the model. Keep <code>manual_curation</code> unless the curator asks for something else.
+        {% endcall %}
+      </div>
+      {% if cands and not cands|selectattr('coding')|list %}
+      <div class="field">
+        <span class="label" id="gene-type-label">Feature type of the gene line <span class="opt">filled in</span></span>
+        <div class="radio-row" role="radiogroup" aria-labelledby="gene-type-label">
+          {% for value, what in gene_types %}
+          <label><input type="radio" name="gene_type" value="{{ value }}"
+                        {{ 'checked' if (job.gene.gene_type or 'gene') == value }}>
+            <span><code>{{ value }}</code>&ensp;{{ what }}</span></label>
+          {% endfor %}
+        </div>
+        <p class="help">No transcript of this gene has a CDS, so the gene is non-coding. Column 3 of the gene
+          line can say so. If you are unsure what the curator expects, keep <code>gene</code>.</p>
+      </div>
+      {% endif %}
+    </div>
+    {% call text_field('note', 'Note', job.gene.note, errors, cls='wide', placeholder='e.g. Model supported by RNA-Seq read mapping and MS proteomics') %}
+      Free text for the curator, such as the evidence behind the model. Characters that GFF3 reserves
+      (<code>;</code> <code>=</code> <code>&amp;</code> <code>,</code>) are encoded for you.
+    {% endcall %}
+  </fieldset>
+
+  <section id="transcripts">
+    <h2>Transcripts found in your file{{ 's' if job.files|length > 1 }}</h2>
+    <p class="help">Each annotated sequence becomes one transcript of this gene. Exons and CDS were recognised
+      by annotation type only; annotation names were ignored. A sequence with exons but no CDS annotation
+      becomes a non-coding transcript. Untick a sequence to leave it out.</p>
+    {{ track_legend(cands|selectattr('coding')|list|length > 0) }}
+
+    {% for c in cands %}
+    {% set m = c.model %}
+    {% set k = 'tx-' ~ c.key %}
+    <fieldset class="panel track{{ ' has-err' if m.issues.has_errors }}" style="margin-top:14px">
+      <legend><label class="check"><input type="checkbox" name="{{ k }}-include" {{ 'checked' if c.form.include }}>
+        {{ m.name }}</label></legend>
+      <p class="meta">From {{ c.file }}. {{ m.length|thousands }} bp, {{ c.n_exons }} exon{{ 's' if c.n_exons != 1 }}{%
+        if m.cds_start %}, CDS {{ m.cds_start|thousands }} to {{ m.cds_end|thousands }}{% endif %}{%
+        if m.cds_parts and not m.issues.has_errors %}: {{ m.cds|length|thousands }} nt coding for
+        {{ m.protein|length|thousands }} amino acids{% endif %}{%
+        if not c.coding %}, no CDS annotation: non-coding{% endif %}.</p>
+      {{ gene_glyph([(None, m.exons, c.glyph_cds)], 1, m.length) }}
+      {{ msg_list(m.issues) }}
+      {% if m.exons %}
+      <details>
+        <summary>Exons and introns as read from the file</summary>
+        <div class="table-scroll">
+        <table>
+          <thead><tr><th class="num">Exon</th><th class="num">Start</th><th class="num">End</th>
+            <th class="num">Length</th><th>Coding part</th><th class="num">Phase</th>
+            <th class="num">Intron after</th><th>Borders</th><th>Type</th></tr></thead>
+          <tbody>
+          {% for s, e in m.exons %}
+            {% set cp = c.cds_by_exon.get(loop.index) %}
+            {% set intr = m.introns[loop.index0] if loop.index0 < m.introns|length else none %}
+            <tr>
+              <td class="num">{{ loop.index }}</td>
+              <td class="num">{{ s|thousands }}</td><td class="num">{{ e|thousands }}</td>
+              <td class="num">{{ (e - s + 1)|thousands }}</td>
+              <td>{% if cp %}{{ cp[0]|thousands }} to {{ cp[1]|thousands }}{% else %}UTR only{% endif %}</td>
+              <td class="num">{{ cp[2] if cp else '' }}</td>
+              <td class="num">{{ (intr.length|thousands ~ ' nt') if intr else '' }}</td>
+              <td class="mono">{{ (intr.donor ~ '...' ~ intr.acceptor) if intr else '' }}</td>
+              <td>{% if intr %}<span class="kind kind-{{ intr.kind }}">{{ intr.kind }}</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        </div>
+        <p class="help">Positions are counted on this Geneious sequence{{ ', read 5′ to 3′ along the transcript' if m.flipped }}.</p>
+      </details>
+      {% endif %}
+      {% if not c.coding %}
+      {% set tfield = k ~ '-tx_type' %}
+      <div class="field{{ ' field-err' if errors.get(tfield) }}">
+        <label for="{{ tfield }}">What this transcript is <span class="req">required</span></label>
+        <select id="{{ tfield }}" name="{{ tfield }}" aria-describedby="{{ tfield }}-help">
+          {% for value, what in noncoding_types %}
+          <option value="{{ value }}" {{ 'selected' if (c.form.tx_type or 'lnc_RNA') == value }}>{{ value }} &mdash; {{ what }}</option>
+          {% endfor %}
+        </select>
+        {% if errors.get(tfield) %}<p class="err">{{ errors.get(tfield) }}</p>{% endif %}
+        <p class="help" id="{{ tfield }}-help">This goes into column 3 of the transcript line, in place of
+          <code>mRNA</code>. These are Sequence Ontology terms, which genome browsers understand.
+          <code>lnc_RNA</code> fits a spliced lncRNA; pick another only if you know the class.</p>
+      </div>
+      {% endif %}
+      <div class="pair">
+        <div>
+          {% call text_field(k ~ '-start', 'Chromosome START of this sequence', c.form.start, errors,
+                             required=loop.first, tag=(none if loop.first else 'optional for a variant')) %}
+            The <b>smaller</b> chromosome coordinate of the region this Geneious sequence covers, as shown in the
+            genome browser. For a minus-strand gene it is still the smaller number (it then matches the last base
+            of your sequence).
+            {% if not loop.first %}For a splice variant you can leave it empty: the tool then places the variant by
+            matching its sequence to the first transcript.{% endif %}
+          {% endcall %}
+        </div>
+        <div>
+          {% call text_field(k ~ '-end', 'Chromosome END (for checking)', c.form.end, errors, tag='optional check') %}
+            The larger coordinate. If you enter it, the tool checks that END &minus; START + 1 equals the length of
+            this sequence ({{ m.length|thousands }} bp), which catches typing errors.
+          {% endcall %}
+        </div>
+        <div>
+          {% call text_field(k ~ '-mrna_id', 'Transcript ID' if not c.coding else 'mRNA ID', c.form.mrna_id, errors, placeholder=(job.gene.gene_id or 'GENEID') ~ '.' ~ c.index, tag='optional', cls='mrna-id') %}
+            Leave empty to use the gene ID followed by <code>.1</code>, <code>.2</code>, ... in the order of the
+            ticked transcripts.
+          {% endcall %}
+        </div>
+        <div>
+          {% call text_field(k ~ '-mrna_name', 'Transcript name' if not c.coding else 'mRNA name', c.form.mrna_name, errors) %}
+            An optional label for this transcript, for example <code>MtSYT1-SV3</code>.
+          {% endcall %}
+        </div>
+      </div>
+    </fieldset>
+    {% else %}
+    <p class="empty">No sequence with annotations of type exon or CDS was found. Add a file below.</p>
+    {% endfor %}
+  </section>
+
+  <fieldset class="panel" style="margin-top:18px">
+    <legend>Add another splice variant</legend>
+    <div class="field" style="margin-top:4px">
+      <label for="more_files">Geneious file(s) of another transcript of this gene <span class="opt">optional</span></label>
+      <input type="file" id="more_files" name="more_files" accept=".geneious" multiple aria-describedby="more-help">
+      <p class="help" id="more-help">Everything you typed above is kept. Each new annotated sequence appears as an
+        additional transcript.</p>
+    </div>
+    <p class="actions"><button class="btn btn-quiet" type="submit" name="action" value="add">Add files</button></p>
+  </fieldset>
+
+  <div class="submit-bar">
+    <button class="btn btn-big" type="submit" name="action" value="build">Build GFF3</button>
+    <span class="help">Nothing is final: you can return to this page and build again.</span>
+  </div>
+</form>
+<script>
+  // show the default mRNA IDs (gene ID + .1, .2 ...) while the gene ID is typed
+  (function () {
+    var gid = document.getElementById('gene_id');
+    function update() {
+      var n = 0;
+      document.querySelectorAll('fieldset.track').forEach(function (fs) {
+        var box = fs.querySelector('input[type=checkbox]'), field = fs.querySelector('input.mrna-id');
+        if (!field) return;
+        if (box && box.checked) { n += 1; field.placeholder = (gid.value.trim() || 'GENEID') + '.' + n; }
+        else { field.placeholder = 'not included'; }
+        fs.classList.toggle('excluded', !(box && box.checked));
+      });
+    }
+    gid.addEventListener('input', update);
+    document.querySelectorAll('fieldset.track input[type=checkbox]').forEach(function (b) { b.addEventListener('change', update); });
+    update();
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+##gff-version 3
+MtrunA17Chr4	manual_curation	gene	35768230	35776612	.	+	.	ID=MtSYT1;Name=MtSYT1;Alias=Medtr4g073400;Note=Joins v5 loci MtrunA17_Chr4g0037111 and MtrunA17_Chr4g0037121 into a unified model identical to v4 locus Medtr4g073400. Evidence based on RNA-Seq and MS proteomic data.
+MtrunA17Chr4	manual_curation	mRNA	35768230	35776612	.	+	.	ID=MtSYT1.1;Parent=MtSYT1
+MtrunA17Chr4	manual_curation	exon	35768230	35768722	.	+	.	ID=MtSYT1.1.exon1;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	five_prime_UTR	35768230	35768611	.	+	.	ID=MtSYT1.1.utr5p1;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35768612	35768722	.	+	0	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35768844	35768942	.	+	.	ID=MtSYT1.1.exon2;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35768844	35768942	.	+	0	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35769219	35769269	.	+	.	ID=MtSYT1.1.exon3;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35769219	35769269	.	+	0	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35769387	35769510	.	+	.	ID=MtSYT1.1.exon4;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35769387	35769510	.	+	0	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35769987	35770105	.	+	.	ID=MtSYT1.1.exon5;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35769987	35770105	.	+	2	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35770196	35770297	.	+	.	ID=MtSYT1.1.exon6;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35770196	35770297	.	+	0	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35771555	35771629	.	+	.	ID=MtSYT1.1.exon7;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35771555	35771629	.	+	0	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35772540	35772616	.	+	.	ID=MtSYT1.1.exon8;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35772540	35772616	.	+	0	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35772729	35772975	.	+	.	ID=MtSYT1.1.exon9;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35772729	35772975	.	+	1	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35773060	35773410	.	+	.	ID=MtSYT1.1.exon10;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35773060	35773410	.	+	0	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35774668	35774796	.	+	.	ID=MtSYT1.1.exon11;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35774668	35774796	.	+	0	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	exon	35775749	35776612	.	+	.	ID=MtSYT1.1.exon12;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	CDS	35775749	35775877	.	+	0	ID=MtSYT1.1.cds;Parent=MtSYT1.1
+MtrunA17Chr4	manual_curation	three_prime_UTR	35775878	35776612	.	+	.	ID=MtSYT1.1.utr3p12;Parent=MtSYT1.1

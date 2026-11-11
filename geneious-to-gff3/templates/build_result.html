@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "_macros.html" import steps, messages as msg_list, track_legend %}
+{% block title %}{{ job.gene.gene_id }} GFF3{% endblock %}
+{% block content %}
+{{ steps(3) }}
+<h1>{{ job.gene.gene_id }} is ready as GFF3</h1>
+
+{% if n_warn %}
+<div class="alert alert-warn"><p><b>Built, with {{ n_warn }} point{{ 's' if n_warn > 1 }} to check.</b>
+  They are listed below, under the gene or the transcript they concern. The file itself is valid GFF3.</p></div>
+{% elif res.coding %}
+<div class="alert alert-ok"><p><b>Built and checked.</b> The file is valid GFF3, and every CDS starts with ATG,
+  ends with a stop codon and has no internal stop codon.</p></div>
+{% else %}
+<div class="alert alert-ok"><p><b>Built and checked.</b> The file is valid GFF3. This gene is non-coding, so it
+  holds exons only: no CDS, no UTR features and no protein.</p></div>
+{% endif %}
+
+<p class="actions">
+  <a class="btn" href="{{ url_for('download', job_id=job.id, kind='gff3') }}">Download {{ job.outputs.gff3 }}</a>
+  {% if job.outputs.proteins %}
+  <a class="btn btn-quiet" href="{{ url_for('download', job_id=job.id, kind='proteins') }}">Proteins (FASTA)</a>
+  <a class="btn btn-quiet" href="{{ url_for('download', job_id=job.id, kind='cds') }}">CDS (FASTA)</a>
+  {% endif %}
+  <a class="btn btn-quiet" href="{{ url_for('download', job_id=job.id, kind='mrna') }}">{{ 'mRNA' if res.coding else 'Transcripts' }} (FASTA)</a>
+  <a class="btn btn-quiet" href="{{ url_for('download', job_id=job.id, kind='report') }}">Report (text)</a>
+</p>
+<p class="help">Every file uses Unix (LF) line endings, so no conversion in Notepad++, VS Code or BBEdit is needed.</p>
+
+<h2>{{ job.gene.gene_id }} on {{ job.gene.seqid }}, {{ '+' if job.gene.strand == '+' else '−' }} strand,
+  {{ res.span[0]|thousands }} to {{ res.span[1]|thousands }}</h2>
+<div class="panel">
+  {{ gene_glyph(tracks, res.span[0], res.span[1], reverse=(job.gene.strand == '-')) }}
+  {{ track_legend(res.coding) }}
+</div>
+{{ msg_list(res.issues) }}
+
+{% for t in res.transcripts %}
+<section class="panel">
+  {% set coding = t.get('coding', t.cds_len) %}
+  <h3>{{ t.mrna_id }}{% if t.mrna_name %} ({{ t.mrna_name }}){% endif %}
+    <span class="kind kind-type">{{ t.get('tx_type', 'mRNA') }}</span></h3>
+  <p class="meta">From the Geneious sequence “{{ t.name }}” in {{ t.file }} ({{ t.length|thousands }} bp),
+    placed at {{ job.gene.seqid }}:{{ t.placement.start }}-{{ t.placement.end }} ({{ t.placement.how }}).
+    Transcript {{ t.mrna_len|thousands }} nt;
+    {% if coding %}CDS {{ t.cds_len|thousands }} nt from {{ t.start_codon }} to
+    {{ t.stop_codon }}; protein {{ t.protein_len|thousands }} amino acids.{% else %}non-coding, so no CDS,
+    no UTR features and no protein.{% endif %}</p>
+  {{ msg_list(t.issues) }}
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th class="num">Exon</th><th>On the sequence</th><th>On the chromosome</th><th class="num">Length</th>
+      {% if coding %}<th>Coding part (sequence)</th><th class="num">Phase</th>{% endif %}
+      <th>Intron after</th></tr></thead>
+    <tbody>
+    {% for x in t.exons %}
+      <tr>
+        <td class="num">{{ x.n }}</td>
+        <td>{{ x.seq[0]|thousands }} to {{ x.seq[1]|thousands }}</td>
+        <td>{{ x.chrom[0] }} to {{ x.chrom[1] }}</td>
+        <td class="num">{{ x.len|thousands }}</td>
+        {% if coding %}
+        <td>{% if x.cds %}{{ x.cds[0]|thousands }} to {{ x.cds[1]|thousands }}{% else %}UTR only{% endif %}</td>
+        <td class="num">{{ '' if x.phase is none else x.phase }}</td>
+        {% endif %}
+        <td>{% if x.intron %}{{ x.intron.len|thousands }} nt <span class="mono">{{ x.intron.borders }}</span>
+          <span class="kind kind-{{ x.intron.kind }}">{{ x.intron.kind }}</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if coding %}
+  <details><summary>Protein sequence ({{ t.protein_len|thousands }} amino acids)</summary>
+    <pre class="seq">{{ t.protein }}</pre></details>
+  {% endif %}
+</section>
+{% endfor %}
+
+<h2>The GFF3 file, line by line</h2>
+<div class="table-scroll">
+<table class="gff">
+  <thead><tr>{% for h in ['seqid', 'source', 'type', 'start', 'end', 'score', 'strand', 'phase', 'attributes'] %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for r in res.rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+</table>
+</div>
+
+<p class="actions">
+  <a class="btn btn-quiet" href="{{ url_for('build_details', job_id=job.id) }}">Edit and build again</a>
+  <a class="btn btn-quiet" href="{{ url_for('build_start') }}">Build another gene</a>
+  <a class="btn btn-quiet" href="{{ url_for('merge') }}">Merge genes into one file</a>
+</p>
+{% endblock %}

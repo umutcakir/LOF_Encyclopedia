@@ -1,0 +1,35 @@
+{% macro text_field(name, label, value, errors, required=False, placeholder="", tag=None, cls="") -%}
+<div class="field{{ ' field-err' if errors.get(name) }}">
+  <label for="{{ name }}">{{ label }}
+    <span class="{{ 'req' if required else 'opt' }}">{{ tag or ('required' if required else 'optional') }}</span></label>
+  <input type="text" id="{{ name }}" name="{{ name }}" value="{{ value or '' }}" placeholder="{{ placeholder }}"
+         class="{{ cls }}" autocomplete="off" spellcheck="false"
+         {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-err {{ name }}-help"{% else %}aria-describedby="{{ name }}-help"{% endif %}>
+  {% if errors.get(name) %}<p class="err" id="{{ name }}-err">{{ errors.get(name) }}</p>{% endif %}
+  <p class="help" id="{{ name }}-help">{{ caller() }}</p>
+</div>
+{%- endmacro %}
+
+{% macro steps(now) -%}
+<ol class="steps" aria-label="Progress">
+  {% for label in ["Upload the Geneious file", "Describe the gene", "Check and download"] %}
+  <li class="{{ 'now' if loop.index == now else ('done' if loop.index < now else '') }}"
+      {% if loop.index == now %}aria-current="step"{% endif %}>{{ label }}</li>
+  {% endfor %}
+</ol>
+{%- endmacro %}
+
+{% macro messages(items) -%}
+{% if items %}
+<ul class="msgs">
+  {% for level, text in items %}
+  <li class="{{ level }}"><b>{{ {'error': 'Error', 'warning': 'Check', 'info': 'Note'}[level] }}:</b> {{ text }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{%- endmacro %}
+
+{% macro track_legend(coding=True) -%}
+<p class="legend">{% if coding %}<span class="l-cds">coding part (CDS)</span><span class="l-utr">UTR part of an exon</span>{%
+  else %}<span class="l-utr">exon of a non-coding transcript</span>{% endif %}<span class="l-intron">intron</span></p>
+{%- endmacro %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import messages as msg_list %}
+{% block title %}Merge report{% endblock %}
+{% block content %}
+{% if job.status == 'merged' %}
+<h1>The merged file is ready</h1>
+<div class="alert alert-ok"><p><b>{{ rep.n_genes }} gene{{ 's' if rep.n_genes != 1 }} and {{ rep.n_features|thousands }}
+  feature lines from {{ rep.files|length }} file{{ 's' if rep.files|length != 1 }}.</b> No errors were found;
+  any warnings are listed below.</p></div>
+<p class="actions">
+  <a class="btn" href="{{ url_for('download', job_id=job.id, kind='gff3') }}">Download {{ job.outputs.gff3 }}</a>
+  <a class="btn btn-quiet" href="{{ url_for('merge') }}">Merge other files</a>
+</p>
+<p class="help">Unix (LF) line endings, one <code>##gff-version 3</code> header.</p>
+{% else %}
+<h1>The files were not merged</h1>
+<div class="alert alert-err"><p><b>Some input lines would make the merged file invalid</b>, so no file was
+  written. Correct the errors listed below in the input files, then merge again.</p></div>
+<p class="actions"><a class="btn" href="{{ url_for('merge') }}">Back to merging</a></p>
+{% endif %}
+
+<h2>Input files</h2>
+<div class="table-scroll">
+<table>
+  <thead><tr><th>File</th><th class="num">Feature lines</th><th class="num">Genes</th><th class="num">mRNAs</th>
+    <th>Repairs made</th></tr></thead>
+  <tbody>
+  {% for f in rep.files %}
+    <tr><td>{{ f.name }}</td><td class="num">{{ f.features|thousands }}</td><td class="num">{{ f.genes }}</td>
+      <td class="num">{{ f.mrnas }}</td>
+      <td style="white-space:normal">{% if f.fixes %}{{ f.fixes|join('; ') }}{% else %}none needed{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Messages</h2>
+{% if rep.issues %}{{ msg_list(rep.issues) }}{% else %}<p class="empty">None: every check passed.</p>{% endif %}
+
+{% if job.preview %}
+<h2>Preview</h2>
+<p class="help">The first {{ job.preview|length }} lines of the merged file.</p>
+<pre>{{ job.preview|join('\n') }}</pre>
+{% endif %}
+{% endblock %}

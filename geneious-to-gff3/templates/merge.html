@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Merge or check GFF3 files{% endblock %}
+{% block content %}
+<h1>Merge or check GFF3 files</h1>
+<p class="lead">Combine the genes you built here, and any other GFF3 files, into one file for the curator. The
+  merged file gets a single header, Unix (LF) line endings and genes sorted by chromosome and position. To clean
+  and check a single file, choose just that one.</p>
+
+<form method="post" enctype="multipart/form-data">
+  <fieldset class="panel">
+    <legend>Genes built with this tool</legend>
+    {% if built %}
+      <p class="help">Tick the genes to include.</p>
+      <ul class="picklist">
+      {% for j in built %}
+        <li><label><input type="checkbox" name="jobs" value="{{ j.id }}" checked>
+          <span><b>{{ j.gene.gene_id }}</b> on {{ j.gene.seqid }}, {{ j.result.transcripts|length }}
+          mRNA{{ 's' if j.result.transcripts|length > 1 }}
+          <span class="help">(built {{ j.updated }}, file {{ j.outputs.gff3 }})</span></span></label></li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">No genes built yet. You can still merge or check uploaded files below.</p>
+    {% endif %}
+  </fieldset>
+
+  <fieldset class="panel">
+    <legend>Other GFF3 files</legend>
+    <div class="field" style="margin-top:4px">
+      <label for="files">GFF3 file(s) <span class="opt">optional</span></label>
+      <input type="file" id="files" name="files" accept=".gff3,.gff,.txt" multiple aria-describedby="files-help">
+      <p class="help" id="files-help">For example models made with the Excel builder. Common problems are repaired
+        and each repair is listed: Windows (CRLF) line endings, empty Excel rows, quote marks added by Excel,
+        stray tabs at line ends and a byte-order mark.</p>
+    </div>
+  </fieldset>
+
+  <fieldset class="panel">
+    <legend>The merged file</legend>
+    <div class="field" style="margin-top:4px">
+      <label for="out_name">File name <span class="opt">filled in</span></label>
+      <input type="text" id="out_name" name="out_name" value="new_gene_models.gff3" aria-describedby="out-help">
+      <p class="help" id="out-help">Letters, digits, dot, underscore or hyphen. <code>.gff3</code> is added if missing.</p>
+    </div>
+    <div class="field">
+      <label class="check" style="font-size:1rem"><input type="checkbox" name="sort" checked>
+        Sort genes by chromosome and position</label>
+      <p class="help">Chromosomes are sorted naturally (Chr2 before Chr10). Untick to keep the input order.
+        The lines of each gene always stay together and in their original order.</p>
+    </div>
+  </fieldset>
+
+  <div class="submit-bar">
+    <button class="btn btn-big" type="submit">Merge and check</button>
+    <span class="help">If a problem would make the file invalid, no file is written and the report says what to fix.</span>
+  </div>
+</form>
+{% endblock %}
